@@ -3,7 +3,7 @@ Prepare Integrated Data
 
 - DESCRIPTION: Clean and construct measures according to manuscript (pp. XXX)
 - CREATES: [Cleaned Data for Analysis](../../data/intermediate/cleaned_dyadic_data.csv)
-- DEPENDS:[Raw Manifesto Project Data](../../data/raw/MPDataset_MPDS2019b.csv), [Raw ParlGov Cabinet Data](../../data/raw/view_cabinet.csv), [Raw European Representative Democracy Data](../../data/raw/Bergmann_Muller_Strom_Cabinets Dataset.csv), [Raw Opinion Poll Data](../../data/raw/polldata_combined.RData)
+- DEPENDS:[Raw Manifesto Project Data](../../data/raw/MPDataset_MPDS2019b.csv), [Raw ParlGov Cabinet Data](../../data/raw/view_cabinet.csv), [Raw European Representative Democracy Data](../../data/raw/Bergmann_Muller_Strom_Cabinets-Dataset.csv), [Raw Opinion Poll Data](../../data/raw/polldata_combined.RData)
 
 Content
 ======
