@@ -10,7 +10,9 @@ Content
 
 -   [Setup](#setup)
 -   [Data](#data)
-    -   [Scalability](#Scalability)
+    -   [Manifesto Project Data](#Manifesto-Project-Data)
+    -   [Opinion Poll Data](#Opinion-Poll-Data)
+-   [Descriptive Information](#Descriptive-Information)  
     -   [Tidy Data](#Tidy-Data)
     -   [Dependent Variable](#Dependent-Variable)
     -   [Independent Variables](#Independent-Variables)
@@ -28,207 +30,94 @@ source("src/lib/functions.R")
 ```
 Data
 ====
--  Requires access to the csv file prepared by PollFish.
--  [Cleaned data](../../data/intermediate/cleaned_NL.csv) and [codings](00_PrepareData_NL.R) are saved to public folders.
+All raw data files are publicly accessible.
 
 
-``` r
-df <- read_sav("../../data/raw-private-encrypted/POLLFISH.csv")
-```
-
-Scalability
+Manifesto Project Data
 ------------
-* The gratifications of the news is constructed as an additive scale using a Principal Components Factor Analysis using varimax rotation, similar to Diddi and LaRose (2006), PAP p.X.
-* NFM according to GdZ
-* News Usage
-*
-
 ```r
-#Scalability of UGT (RQ1)
-hs <- df %>%
-  select(ugt_1:ugt_4,)
-cols <- c(1:4)
-hs[,cols] = apply(hs[,cols], 2, function(x) as.numeric(as.character(x)));
-hs <- hs[complete.cases(hs), ]
-fac_hs <- psych::fa(hs, rotate="varimax", fm="pa", scores="Bartlett")
+#Load & Tidy Comparative Manifesto Database
 
-surv <- df %>%
-  select(ugt_5:ugt_11)
-cols <- c(1:7)
-surv[,cols] = apply(surv[,cols], 2, function(x) as.numeric(as.character(x)));
-surv <- surv[complete.cases(surv), ]
-fac_surv <- psych::fa(surv, rotate="varimax", fm="pa", scores="Bartlett")
+cmp <- read_csv("data/raw/MPDataset_MPDS2019b.csv")
 
-esc <- df %>%
-  select(ugt_12:ugt_16)
-cols <- c(1:5)
-esc[,cols] = apply(esc[,cols], 2, function(x) as.numeric(as.character(x)));
-esc <- esc[complete.cases(esc), ]
-fac_esc <- psych::fa(esc, rotate="varimax", fm="pa", scores="Bartlett")
+cmp <- cmp %>%
+  filter(country == 42 | country == 21 | country == 41 |
+           country == 53 | country == 22 | country == 12 |
+           country == 11 | country == 14 | country == 15 ) %>% #Select Countries under Study
+  mutate( #Calculate Issue Positions
+    issue1 = ((per401 + per402 + per407 + per414 + per702) -
+                (per404 + per405 + per406 + per409 + per412 + per413 + per415 + per701 + per403)),#pos economy
+    issue2 = (per504 + per506) - (per505 + per507),#pos welfare
+    issue3 = per108 - per110,#pos welfare
+    issue4 = per607 - per608,#pos multiculturalism
+    issue5 = ((per103 + per105 + per106 + per107) -
+                (per104 + per109)),#pos international affairs
+    issue6 = per101 - per102,#pos specialrelations
+    issue7 = per203 - per204,#pos constitution
+    issue8 = per301 - per302,#pos decentralization
+    issue9 = (per601 + per603) - (per602 + per604),#pos traditional
+    issue10 = per201 + per202,#sal democracy
+    issue11 = per503 + per705 + per706,#sal groups
+    issue12 = per303 + per304 + per305,#sal governance
+    issue13 = per408 + per411 + per416,#sal economicgrowth
+    issue14 = per502,#sal culture
+    issue15 = per605,#sal law_order
+    issue16 = per606,#sal harmony
+    issue17 = per703,#sal farmers
+    issue18 = per704,#sal middleclass
+    issue19 = per416 + per501,#sal environment
+    electionid = interaction(country, edate, drop=TRUE)
+  ) %>%
+  select(party, country, edate, electionid, rile, issue1, issue2, issue3, issue4, issue5, issue6, issue7, issue8,
+         issue9, issue10, issue11, issue12, issue13, issue14, issue15,
+         issue16, issue17, issue18, issue19) #Select all relevant variables
 
-pt <- df %>%
-  select(ugt_17:ugt_21)
-cols <- c(1:5)
-pt[,cols] = apply(pt[,cols], 2, function(x) as.numeric(as.character(x)));
-pt <- pt[complete.cases(pt), ]
-fac_pt <- psych::fa(pt, rotate="varimax", fm="pa", scores="Bartlett")
+cmp <- calculate_sum_difs(cmp)# Create overlap for each pair of parties
 
-ent <- df %>%
-  select(ugt_22:ugt_23)
-cols <- c(1:2)
-ent[,cols] = apply(ent[,cols], 2, function(x) as.numeric(as.character(x)));
-ent <- ent[complete.cases(ent), ]
-fac_ent <- psych::fa(ent, rotate="varimax", fm="pa", scores="Bartlett")
-
-social <- df %>%
-  select(ugt_24, ugt_28:ugt_30)
-cols <- c(1:4)
-social[,cols] = apply(social[,cols], 2, function(x) as.numeric(as.character(x)));
-social <- social[complete.cases(social), ]
-fac_social <- psych::fa(social, rotate="varimax", fm="pa", scores="Bartlett")
-
-#Scalability of NFM (DV H1, RQ2, DV H2, RQ3)
-nfm <- df %>%
-  select(nfm_1:nfm_6)
-cols <- c(1:6)
-nfm[,cols] = apply(nfm[,cols], 2, function(x) as.numeric(as.character(x)));
-nfm <- nfm[complete.cases(nfm), ]
-fac_nfm <- psych::fa(nfm, rotate="varimax", fm="pa", scores="Bartlett")
-
-#Scalability of Mobile News Usage (IV H1)
-mob_usage <- df %>%
-  select(mediagebruik_4:mediagebruik_9)
-cols <- c(1:6)
-mob_usage[,cols] = apply(mob_usage[,cols], 2, function(x) as.numeric(as.character(x)));
-mob_usage <- mob_usage[complete.cases(mob_usage), ]
-fac_mob_usage <- psych::fa(mob_usage, rotate="varimax", fm="pa", scores="Bartlett")
-
-# Knowledge about Corona (RQ 2)
-df <- df %>%
-  mutate(corona1=str_to_lower(corona1, locale = "nl"),
-         KC1 = as.numeric(str_detect(df$corona1, "covid")),
-         corona2_1 = replace_na(corona2_1, 0),
-         corona2_2 = replace_na(corona2_2, 0),
-         corona2_5 = replace_na(corona2_5, 0),
-         corona2_8 = replace_na(corona2_8, 0),
-         KC2 = (corona2_1 + corona2_2 + corona2_5 + corona2_8)/4,
-         corona3=str_to_lower(corona3, locale = "nl"),
-         KC3 = as.numeric(str_detect(df$corona3, "loon")),
-         corona4_1 = ifelse(df$corona4_1 == 2, 1, 0),
-         corona4_2 = ifelse(df$corona4_2 == 1, 1, 0),
-         corona4_3 = ifelse(df$corona4_3 == 2, 1, 0),
-         corona4_4 = ifelse(df$corona4_4 == 2, 1, 0),
-         KC4 = (corona4_1 + corona4_2 + corona4_3 + corona4_4)/4)
-
-KC <- df %>%
-  select(KC1:KC4)
-cols <- c(1:4)
-KC[,cols] = apply(KC[,cols], 2, function(x) as.numeric(as.character(x)));
-KC <- KC[complete.cases(KC), ]
-fac_KC <- psych::fa(KC, rotate="varimax", fm="pa", scores="Bartlett")
-
-#Political Knowledge (IV H2, DV H3, RQ3: together with Political Efficacy)
-df <- df %>%
-  mutate(pol_ken1_1 =  replace_na(pol_ken1_1, 0),
-         pol_ken1_2 =  replace_na(pol_ken1_2, 0),
-         pol_ken1_3 =  replace_na(pol_ken1_3, 0),
-         pol_ken1_10 =  replace_na(pol_ken1_10, 0),
-         pk1 = round((pol_ken1_1 + pol_ken1_2 + pol_ken1_3 + pol_ken1_10)/4, 0),
-         pol_ken2 = recode(pol_ken2, `99` = 0),
-         pol_ken3 = recode(pol_ken3, `99` = 0))
-
-PK <- df %>%
-  select(pk1, pol_ken2, pol_ken3)
-cols <- c(1:3)
-PK[,cols] = apply(PK[,cols], 2, function(x) as.numeric(as.character(x)));
-PK <- PK[complete.cases(PK), ]
-fac_PK <- psych::fa(PK, rotate="varimax", fm="pa", scores="Bartlett")
-
-#Political Efficacy (IV H2, DV H3, RQ3: together with Political Knowledge)
-PE <- df %>%
-  select(pol_efficacy_1:pol_efficacy_5)
-cols <- c(1:3)
-PE[,cols] = apply(PE[,cols], 2, function(x) as.numeric(as.character(x)));
-PE <- PE[complete.cases(PE), ]
-fac_PE <- psych::fa(PE, rotate="varimax", fm="pa", scores="Bartlett")
-
-PS <- df%>%
-  select(pk1, pol_ken2, pol_ken3, pol_efficacy_1:pol_efficacy_5)
-cols <- c(1:6)
-PS[,cols] = apply(PS[,cols], 2, function(x) as.numeric(as.character(x)));
-PS <- PS[complete.cases(PS), ]
-fac_PS <- psych::fa(PS, rotate="varimax", fm="pa", scores="Bartlett")
-
-#Political Participation (IV H3, RQ3)
-PP <- df %>%
-  select(elect_part1:elect_part2)
-cols <- c(1:2)
-PP[,cols] = apply(PP[,cols], 2, function(x) as.numeric(as.character(x)));
-PP <- PP[complete.cases(PP), ]
-fac_PP <- psych::fa(PP, rotate="varimax", fm="pa", scores="Bartlett")
-
-tibble(Scale = c("Habit Strengt", "Surveillance", "Escapism","Passing Time", "Entertainment", "Social Motivation",
-                 "News Finds Me (NFM) Perception", "Mobile News Usage", "Knowledge about COVID-19",
-                 "Political Knowledge", "Political Interest", "Political Sophistication",
-                 "Political Participation"),
-       `Chi Square` = c(fac_hs[3]$chi, fac_surv[3]$chi, fac_esc[3]$chi, fac_pt[3]$chi, fac_ent[3]$chi,
-                        fac_social[3]$chi, fac_nfm[3]$chi, fac_mob_usage[3]$chi, fac_KC[3]$chi,
-                        fac_PK[3]$chi, fac_PE[3]$chi, fac_PS[3]$chi, fac_PP[3]$chi),
-       Fit = c(fac_hs[10]$fit, fac_surv[10]$fit, fac_esc[10]$fit, fac_pt[10]$fit, fac_ent[10]$fit,
-               fac_social[10]$fit, fac_nfm[10]$fit, fac_mob_usage[10]$fit, fac_KC[10]$fit,
-              fac_PK[10]$fit, fac_PE[10]$fit, fac_PS[10]$fit, fac_PP[10]$fit),
-       PA = c(fac_hs[29]$R2, fac_surv[29]$R2, fac_esc[29]$R2, fac_pt[29]$R2, fac_ent[27]$R2,
-              fac_social[29]$R2, fac_nfm[29]$R2, fac_mob_usage[29]$R2, fac_KC[29]$R2,
-              fac_PK[26]$R2, fac_PE[26]$R2, fac_PS[29]$R2, fac_PP[27]$R2))
+cmp <- cmp %>%
+  mutate(country = ifelse(substr(electionid_ext,1,2)=="11","Sweden",#Recode country variable
+                   ifelse(substr(electionid_ext,1,2)=="12","Norway",
+                   ifelse(substr(electionid_ext,1,2)=="13","Denmark",
+                   ifelse(substr(electionid_ext,1,2)=="22","Netherlands",
+                   ifelse(substr(electionid_ext,1,2)=="21","Belgium",
+                   ifelse(substr(electionid_ext,1,2)=="41","Germany",
+                   ifelse(substr(electionid_ext,1,2)=="42","Austria",
+                   ifelse(substr(electionid_ext,1,2)=="53","Ireland",NA)))))))),
+         electiondate = as.Date(str_sub(electionid_ext,4,13),format="%d/%m/%Y"),
+         id2 = paste(electionid_ext, party1, party2, sep="."),
+         party1=recode(party1,#Recode merger parties
+                       `21914` = 21917,
+                       `21221` = 21321,
+                       `23111` = 23113,
+                       `23112` = 23113,
+                       `41112` = 41111,
+                       `41113` = 41111,
+                       `41223` = 41221,
+                       `41222` = 41221,
+                       `21221` = 21321),
+         party2=recode(party2,#Recode merger parties
+                       `21914` = 21917,
+                       `21221` = 21321,
+                       `23111` = 23113,
+                       `23112` = 23113,
+                       `41112` = 41111,
+                       `41113` = 41111,
+                       `41223` = 41221,
+                       `41222` = 41221,
+                       `21221` = 21321)) %>%
+  select(country, electiondate, electionid_ext, id2, party1, party2, sum_difs, rile_difs)
 ```
 
-|  Scale		 				| Chi Square |	Fit 		  | PA		|
-|-----------------------------------------------  | :-------------: | :--------------:  | :----------------: |
-| Habit Strength					|  24.2	     | 0.911 		  | 0.876		|
-| Surveillance					|  37.7	     | 0.951 	  | 0.920 		|
-| Escapism					|  12.0	     | 0.941 	  | 0.915		|
-| Passing Time					|  13.6 	     | 0.938 	  | 0.908		|
-| Entertainment					|  00.0	     | 0.961 	  | 0.859		|
-| Social Motivation				|  23.9	     | 0.892 	  | 0.846		|
-| News Finds Me (NFM) Perception	|  51.6	     | 0.787 	  | 0.809		|
-| Mobile News Usage			|150.0	     | 0.717	 	  | 0.783		|
-| Knowledge about COVID-19		|  70.8	     | 0.331 	  | 0.530		|
-| Political Knowledge				|  00.0	     | 0.543 	  | 0.641		|
-| Political Interest				|  00.0	     | 0.673 	  | 0.733		|
-| Political Sophistication			|227.0	     | 0.370 	  | 0.897		|
-| Political Participation			|  00.0	     | 0.966 	  | 0.869		|
+Opinion Poll Data
+------------
+``` r
 
-- Variables created with an additive scale:
-	- Trust in Traditional News
-	- Trust in Online News
-	- Traditional News Usage
 
-```r
-#Scalability of Controls
-trust_tradmedia <- df %>%
-  select(trust_media_1:trust_media_3)
-trust_tradmedia <- trust_tradmedia[complete.cases(trust_tradmedia), ]
-trust_tradmedia <- psy::cronbach(trust_tradmedia)
-
-trust_mobmedia <- df %>%
-  select(trust_media_4:trust_media_8)
-trust_mobmedia <- trust_mobmedia[complete.cases(trust_mobmedia), ]
-trust_mobmedia <- psy::cronbach(trust_mobmedia)
-
-trad_newsusage <- df %>%
-  select(mediagebruik_1:mediagebruik_3, mediagebruik_9)
-trad_newsusage <- trad_newsusage[complete.cases(trad_newsusage), ]
-trad_newsusage <- psy::cronbach(trad_newsusage)
-
-tibble(Scale = c("Trust in Traditional Media", "Trust in Mobile Media", "Traditional News Usage"),
-       `Cronbach's Alpha` = c(trust_tradmedia[3]$alpha, trust_mobmedia[3]$alpha, trad_newsusage[3]$alpha))
 ```
 
-| Scale					| Cronbach's Alpha	|
-| -----------------------------------	| ------------------------- |
-| Trust in Traditional Media	| 0.689			|
-| Trust in Online Media		| 0.745			|
-| Traditional News Usage		| 0.692			|
+
+Descriptive Information
+====
 
 Tidy Data
 -------
