@@ -6,7 +6,7 @@ Prepare Integrated Data
 -  DEPENDS:
   - [Raw Data from Manifesto Project Database](../../data/raw/MPDataset_MPDS2019b.csv)
   - [Raw Data from ParlGov](../../data/raw/view_cabinet.csv)
-  - [Raw Data from European Representative Democracy Data Archive](../../data/raw/Bergmann_Muller&Strom_Cabinets Dataset.csv)
+  - [Raw Data from European Representative Democracy Data Archive](../../data/raw/Bergmann_Muller_Strom_Cabinets Dataset.csv)
   - [Raw Opinion Poll Data](../../data/raw/polldata_combined.RData)
 
 Content
