@@ -1,8 +1,8 @@
 Prepare Integrated Data
 ================
 
-- DESCRIPTION: Clean and construct measures according to PAP (pp. XXX)
-- CREATES: [Cleaned Data for Dutch Sample](../../data/intermediate/cleaned_dyadic_data.csv)
+- DESCRIPTION: Clean and construct measures according to manuscript (pp. XXX)
+- CREATES: [Cleaned Data for Analysis](../../data/intermediate/cleaned_dyadic_data.csv)
 -  DEPENDS:
   - [Raw Data from Manifesto Project Database](../../data/raw/MPDataset_MPDS2019b.csv)
   - [Raw Data from ParlGov](../../data/raw/view_cabinet.csv)
