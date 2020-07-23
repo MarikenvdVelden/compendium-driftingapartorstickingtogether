@@ -281,8 +281,8 @@ coalitiondata <- read_csv(file = "data/raw/Bergmann_Muller_Strom_Cabinets-Datase
                                "Vranizky V"="Vranitzky V"))
 
 cabinet_data <- left_join(x = parlgov, y = coalitiondata, by="cabinet_name") %>%
-  mutate(start_date = as.Date(start_date),
-         election_date = as.Date(election_date))
+                mutate(start_date = as.Date(start_date),
+                       election_date = as.Date(election_date))
 
 #Add termination causes
 #source("imputing_termination_cause.R")
@@ -292,12 +292,72 @@ cabinet_names <- erd$cabinet_name
 for(i in 1:length(cabinet_names)){
   cabinet_data$termination_cause[which(cabinet_data$cabinet_name==cabinet_names[i])] <- rep(erd$termination_cause[which(erd$cabinet_name==cabinet_names[i])], length(which(cabinet_data$cabinet_name==cabinet_names[i])))
 }
+
+cabinet_data <- cabinet_data %>%
+        mutate(cabinet_name = lag(cabinet_name),
+               caretaker = lag(caretaker),
+               cabinet_party = lag(cabinet_party),
+               prime_minister = lag(prime_minister),
+               seats = lag(seats),
+               election_seats_total = lag(election_seats_total),
+               termination_cause = lag(termination_cause),
+               no_cabinetparties = lag(no_cabinetparties),
+               govtype = lag(govtype)) %>%
+       select(country_name = country_name_short, election_date, start_date, cmp_id, party,
+              cabinet_party, prime_minister, cabinet_name, no_cabinetparties, caretaker, govtype,
+              termination_cause, seats, tot_seats = election_seats_total)
 ```
 
 Integrate Datasets
 ------------
 ``` r
+cmp <- left_join(x = cmp, y = polls, by = "id")
+cmp <- cmp %>%
+  select(country, electiondate, electionid_ext, id2, party1, party2, sum_difs, rile_difs,
+         polls_party1 = mean_polls) %>%
+  mutate(id = paste(country,substr(electiondate,1,4),party2, sep="-"))
+cmp <- left_join(x = cmp, y = polls, by = "id")
 
+cmp <- cmp %>%
+  select(country, electiondate, electionid_ext, id2, party1, party2, sum_difs, rile_difs,
+         polls_party1, polls_party2 = mean_polls) %>%
+  mutate(match_id = paste(electiondate, party1, sep="."))
+
+df <- left_join(cmp, cabinet_data, by = "match_id") %>%
+  mutate(match_id = paste(electiondate, party2, sep=".")) %>%
+  select(match_id, country:electiondate, start_date, electionid_ext, party = party1,
+         partner = party2, sum_difs, rile_difs, polls_party = polls_party1,
+         polls_partner = polls_party2, cabinet_party, pm_party = prime_minister, seats_party = seats)
+
+df <- left_join(df, cabinet_data, by = "match_id") %>%
+  select(country:electiondate, start_date = start_date.x, electionid_ext,
+         party = party.x, partner:polls_partner, cabinet_party = cabinet_party.x,
+         cabinet_partner = cabinet_party.y, pm_party, pm_partner = prime_minister, seats_party,
+         seats_partner = seats, tot_seats, cabinet_name:termination_cause)
+
+#delete pairs of same party
+df <- df %>%
+  filter(party != partner) %>%
+  drop_na(country)
+
+# Identify each pair with an unique id & delete combinations that are duplicates
+pair <- matrix(NA, dim(df)[1],1)
+for(i in 1:dim(df)[1]){
+   if(is.na(pair[i])){
+     pair[c(which(df$party==df$party[i] & df$partner==df$partner[i]),
+     which(df$party==df$partner[i] & df$partner==df$party[i]))] <- i
+   }
+}
+electionid <- with(df, interaction(country, electiondate, drop=TRUE))
+unique_elections <- unique(electionid)
+is_duplicate <- matrix(NA, dim(df)[1])
+
+for(i in 1:length(unique_elections)){
+  where <- which(electionid==unique_elections[i])   
+  is_duplicate[where] <- duplicated(pair[which(electionid==unique_elections[i]),])
+}
+duplicate<-which(is_duplicate==TRUE)
+df<-df[-duplicate,]
 ```
 
 
