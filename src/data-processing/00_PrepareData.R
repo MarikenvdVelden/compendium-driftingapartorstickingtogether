@@ -73,7 +73,8 @@ cmp <- cmp %>%
                        `41222` = 41221,
                        `21221` = 21321),
          id = paste(country,substr(electiondate,1,4),party1, sep="-")) %>%
-  select(country, electiondate, electionid_ext, id, id2, party1, party2, sum_difs, rile_difs)
+  select(country, electiondate, electionid_ext, id, id2, party1, party2, sum_difs, rile_difs) %>%
+  drop_na(sum_difs)
 
 #Load & Tidy poll data from Van Der Velden (2015), Jennings and Wlezien (2014) and Askham-Christensen (2012) 
 load("data/raw/polldata_combined.RData")
@@ -156,7 +157,12 @@ polls <- polls %>%
   mutate(id = paste(country,year,party, sep="-")) %>%
   select(id, mean_polls)
 
-#merge Poll data to CMP 
+#Load & tidy Parlgov Data and with Coalition Data Set of Bergmann et al.
+
+
+
+
+#Integrate Data Sets 
 cmp <- left_join(x = cmp, y = polls, by = "id")
 cmp <- cmp %>%
   select(country, electiondate, electionid_ext, id2, party1, party2, sum_difs, rile_difs,
