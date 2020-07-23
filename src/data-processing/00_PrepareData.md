@@ -13,6 +13,7 @@ Content
     -   [Manifesto Project Data](#Manifesto-Project-Data)
     -   [Opinion Poll Data](#Opinion-Poll-Data)
     -   [Cabinet Data](#Cabinet-Data)
+    -   [Integrate Datasets](#Integrate-Datasets)
 -   [Descriptive Information](#Descriptive-Information)  
     -   [Tidy Data](#Tidy-Data)
     -   [Dependent Variable](#Dependent-Variable)
@@ -287,14 +288,23 @@ cabinet_data <- left_join(x = parlgov, y = coalitiondata, by="cabinet_name") %>%
 #source("imputing_termination_cause.R")
 #termination_cause only goes to 1996, rest own coding, see csv "imputing_termination_cause" for coding decisions
 erd <- read_csv(file = "data/raw/imputing_termination_cause.csv")
+cabinet_names <- erd$cabinet_name
+for(i in 1:length(cabinet_names)){
+  cabinet_data$termination_cause[which(cabinet_data$cabinet_name==cabinet_names[i])] <- rep(erd$termination_cause[which(erd$cabinet_name==cabinet_names[i])], length(which(cabinet_data$cabinet_name==cabinet_names[i])))
+}
+```
+
+Integrate Datasets
+------------
+``` r
+
 ```
 
 
-Descriptive Information
+Tidy Data
 ====
 
-Tidy Data
--------
+
 
 ``` r
 # Mutate data

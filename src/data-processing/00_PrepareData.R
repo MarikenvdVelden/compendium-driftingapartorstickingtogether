@@ -173,7 +173,6 @@ parlgov <- read_csv(file = "data/raw/view_cabinet.csv")  %>%
 
 ids <- read_csv(file = "data/raw/cmp_code_parlgov.csv") %>%
   drop_na(cmp_id)
-
 for(i in 1:dim(ids)[1]){
   select <- which(parlgov$id3==ids$parlgov_id[i])
   parlgov$cmp_id[select] <- ids$cmp_id[i]
@@ -238,9 +237,17 @@ coalitiondata <- read_csv(file = "data/raw/Bergmann_Muller_Strom_Cabinets-Datase
 
 cabinet_data <- left_join(x = parlgov, y = coalitiondata, by="cabinet_name") %>%
   mutate(start_date = as.Date(start_date),
-         election_date = as.Date(election_date))
+         election_date = as.Date(election_date)) %>%
+  select(country_name_short:election_seats_total, party, cmp_id:govtype)
 
-
+#Add termination causes
+#source("imputing_termination_cause.R") 
+#termination_cause only goes to 1996, rest own coding, see csv "imputing_termination_cause" for coding decisions
+erd <- read_csv(file = "data/raw/imputing_termination_cause.csv")
+cabinet_names <- erd$cabinet_name
+for(i in 1:length(cabinet_names)){
+  cabinet_data$termination_cause[which(cabinet_data$cabinet_name==cabinet_names[i])] <- rep(erd$termination_cause[which(erd$cabinet_name==cabinet_names[i])], length(which(cabinet_data$cabinet_name==cabinet_names[i])))
+}
 
 #Integrate Data Sets 
 cmp <- left_join(x = cmp, y = polls, by = "id")
