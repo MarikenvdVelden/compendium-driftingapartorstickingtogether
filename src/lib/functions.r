@@ -32,3 +32,4 @@ calculate_sum_difs <- function(cmp){
     }
   return(tot)
 }
+

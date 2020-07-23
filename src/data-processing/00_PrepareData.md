@@ -42,8 +42,8 @@ cmp <- read_csv("data/raw/MPDataset_MPDS2019b.csv")
 
 cmp <- cmp %>%
   filter(country == 42 | country == 21 | country == 41 |
-           country == 53 | country == 22 | country == 12 |
-           country == 11 | country == 14 | country == 15 ) %>% #Select Countries under Study
+           country == 53 | country == 22 | country == 12 | country == 14 |
+           country == 11 | country == 13 | country == 15 ) %>% #Select Countries under Study
   mutate( #Calculate Issue Positions
     issue1 = ((per401 + per402 + per407 + per414 + per702) -
                 (per404 + per405 + per406 + per409 + per412 + per413 + per415 + per701 + per403)),#pos economy
@@ -78,11 +78,12 @@ cmp <- cmp %>%
   mutate(country = ifelse(substr(electionid_ext,1,2)=="11","Sweden",#Recode country variable
                    ifelse(substr(electionid_ext,1,2)=="12","Norway",
                    ifelse(substr(electionid_ext,1,2)=="13","Denmark",
+                   ifelse(substr(electionid_ext,1,2)=="14","Finland",
                    ifelse(substr(electionid_ext,1,2)=="22","Netherlands",
                    ifelse(substr(electionid_ext,1,2)=="21","Belgium",
                    ifelse(substr(electionid_ext,1,2)=="41","Germany",
                    ifelse(substr(electionid_ext,1,2)=="42","Austria",
-                   ifelse(substr(electionid_ext,1,2)=="53","Ireland",NA)))))))),
+                   ifelse(substr(electionid_ext,1,2)=="53","Ireland",NA))))))))),
          electiondate = as.Date(str_sub(electionid_ext,4,13),format="%d/%m/%Y"),
          id2 = paste(electionid_ext, party1, party2, sep="."),
          party1=recode(party1,#Recode merger parties
@@ -111,6 +112,7 @@ cmp <- cmp %>%
 Opinion Poll Data
 ------------
 ``` r
+load("data/raw/polldata_combined.RData")
 
 
 ```

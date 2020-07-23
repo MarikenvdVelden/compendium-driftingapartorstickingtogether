@@ -83,6 +83,41 @@ polls <- data %>%
                values_to = "polls") %>%
   filter(country == "Austria" | country == "Belgium" | country == "Denmark" |
            country == "Finland" | country == "Germany" | country == "Ireland" |
-           country == "Netherlands" | country == "Norway" | country == "Sweden")
+           country == "Netherlands" | country == "Norway" | country == "Sweden") %>%
+  mutate(month = as.character(month),
+         month = ifelse(nchar(month)==1, paste0("0",month), month),
+         date = paste("01", month, year, sep="/"))
+
+
+#add cmp code names to party
+party <- row.names(cmpcode)
+for(i in 1:length(party)){
+  for(j in 1:length(unique(polls$country))){
+    select <- which(polls$party==row.names(cmpcode)[i] & polls$country==unique(polls$country)[j])
+    polls$party[select] <- cmpcode[row.names(cmpcode)[i],j] 
+  }
+} 
+
+polls <- polls %>%
+  mutate(party = as.numeric(party),
+         party = recode(party,#Recode merger parties
+                       `21914` = 21917,
+                       `21221` = 21321,
+                       `23111` = 23113,
+                       `23112` = 23113,
+                       `41112` = 41111,
+                       `41113` = 41111,
+                       `41223` = 41221,
+                       `41222` = 41221,
+                       `21221` = 21321),
+         country_code = substr(party,1,2),
+         id = paste(country, date, sep=".")) %>%
+  drop_na(party) %>% 
+  arrange(country_code)
+
+#add election dates
+source("data/raw/Election_Dates.R")
+
+
 
 
