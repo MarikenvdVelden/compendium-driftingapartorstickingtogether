@@ -14,8 +14,7 @@ Content
     -   [Opinion Poll Data](#Opinion-Poll-Data)
     -   [Cabinet Data](#Cabinet-Data)
     -   [Integrate Datasets](#Integrate-Datasets)
--   [Descriptive Information](#Descriptive-Information)  
-    -   [Tidy Data](#Tidy-Data)
+- [Tidy Data](#Tidy-Data)
     -   [Dependent Variable](#Dependent-Variable)
     -   [Independent Variables](#Independent-Variables)
     -   [Moderator](#Moderator)
@@ -363,8 +362,6 @@ df<-df[-duplicate,]
 
 Tidy Data
 ====
-
-
 
 ``` r
 # Mutate data
