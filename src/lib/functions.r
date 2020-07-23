@@ -1,5 +1,6 @@
 library(foreign)
 library(tidyverse)
+library(lubridate)
 
 calculate_sum_difs <- function(cmp){
   unique_elections <- unique(cmp$electionid)

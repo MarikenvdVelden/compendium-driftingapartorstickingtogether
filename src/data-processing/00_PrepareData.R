@@ -71,8 +71,9 @@ cmp <- cmp %>%
                        `41113` = 41111,
                        `41223` = 41221,
                        `41222` = 41221,
-                       `21221` = 21321)) %>%
-  select(country, electiondate, electionid_ext, id2, party1, party2, sum_difs, rile_difs)
+                       `21221` = 21321),
+         id = paste(country,substr(electiondate,1,4),party1, sep="-")) %>%
+  select(country, electiondate, electionid_ext, id, id2, party1, party2, sum_difs, rile_difs)
 
 #Load & Tidy poll data from Van Der Velden (2015), Jennings and Wlezien (2014) and Askham-Christensen (2012) 
 load("data/raw/polldata_combined.RData")
@@ -84,10 +85,11 @@ polls <- data %>%
   filter(country == "Austria" | country == "Belgium" | country == "Denmark" |
            country == "Finland" | country == "Germany" | country == "Ireland" |
            country == "Netherlands" | country == "Norway" | country == "Sweden") %>%
-  mutate(month = as.character(month),
+  mutate(year = as.character(year),
+         month = as.character(month),
          month = ifelse(nchar(month)==1, paste0("0",month), month),
-         date = paste("01", month, year, sep="/"))
-
+         date = paste("01", month, year, sep="/"),
+         date = as.Date(date, format = "%d/%m/%Y"))
 
 #add cmp code names to party
 party <- row.names(cmpcode)
@@ -112,12 +114,57 @@ polls <- polls %>%
                        `21221` = 21321),
          country_code = substr(party,1,2),
          id = paste(country, date, sep=".")) %>%
+  add_column(event = NA) %>%
   drop_na(party) %>% 
   arrange(country_code)
 
 #add election dates
-source("data/raw/Election_Dates.R")
+id <- read_csv(file = "data/raw/election_id.csv")
+for(i in 1:dim(id)[1]){
+    if(i==1){
+      start <- i
+      }
+    else{
+      start <- max(which(polls$id==id$id[(i-1)]))+1
+    }
+    end <- max(which(polls$id==id$id[i]))
+    polls$event[start:end] <- str_split(id$id[i], "\\.")[[1]][2]
+}
 
+polls <- polls %>%  
+  drop_na(event) %>%
+  mutate(event = as.Date(event),
+         month_teller = abs(event-date),#add teller to select 6 months before election
+         month_teller = round(as.numeric(month_teller)/365 *12,0),
+         event = paste(country, event, sep = ".")) %>%
+  add_column(mean_polls = 0) %>%
+  drop_na(polls)
 
+#Average polls of 6 months prior to election  
+for(i in 1: length(unique(polls$event))){
+  tmp <- unique(polls$event)
+  party <- unique(polls$party[which(polls$event==tmp[i])])
+  for(j in 1: length(party)){
+    tmpp <- polls[which(polls$event==tmp[i] & polls$month_teller < 7 & polls$month_teller > 0 & polls$party==party[j]), "polls"]
+    if(dim(tmpp)[1]>0){
+    polls$mean_polls[which(polls$event==tmp[i])] <- round(sum(tmpp, na.rm=T)/(6 - length(which(is.na(tmpp)))),2)}
+  }
+}
 
+polls <- polls %>%
+  filter(id == event) %>%
+  mutate(id = paste(country,year,party, sep="-")) %>%
+  select(id, mean_polls)
+
+#merge Poll data to CMP 
+cmp <- left_join(x = cmp, y = polls, by = "id")
+cmp <- cmp %>%
+  select(country, electiondate, electionid_ext, id2, party1, party2, sum_difs, rile_difs,
+         polls_party1 = mean_polls) %>%
+  mutate(id = paste(country,substr(electiondate,1,4),party2, sep="-"))
+cmp <- left_join(x = cmp, y = polls, by = "id") 
+  
+cmp <- cmp %>%
+  select(country, electiondate, electionid_ext, id2, party1, party2, sum_difs, rile_difs,
+         polls_party1, polls_party2 = mean_polls)
 
