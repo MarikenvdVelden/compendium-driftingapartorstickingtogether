@@ -37,7 +37,6 @@ Manifesto Project Data
 ------------
 ```r
 #Load & Tidy Comparative Manifesto Database
-
 cmp <- read_csv("data/raw/MPDataset_MPDS2019b.csv")
 
 cmp <- cmp %>%
@@ -105,8 +104,10 @@ cmp <- cmp %>%
                        `41113` = 41111,
                        `41223` = 41221,
                        `41222` = 41221,
-                       `21221` = 21321)) %>%
-  select(country, electiondate, electionid_ext, id2, party1, party2, sum_difs, rile_difs)
+                       `21221` = 21321),
+         id = paste(country,substr(electiondate,1,4),party1, sep="-")) %>%
+  select(country, electiondate, electionid_ext, id, id2, party1, party2, sum_difs, rile_difs) %>%
+  drop_na(sum_difs)
 ```
 
 Opinion Poll Data
