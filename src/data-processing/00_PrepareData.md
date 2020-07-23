@@ -12,6 +12,7 @@ Content
 -   [Data](#data)
     -   [Manifesto Project Data](#Manifesto-Project-Data)
     -   [Opinion Poll Data](#Opinion-Poll-Data)
+    -   [Cabinet Data](#Cabinet-Data)
 -   [Descriptive Information](#Descriptive-Information)  
     -   [Tidy Data](#Tidy-Data)
     -   [Dependent Variable](#Dependent-Variable)
@@ -193,6 +194,99 @@ polls <- polls %>%
   filter(id == event) %>%
   mutate(id = paste(country,year,party, sep="-")) %>%
   select(id, mean_polls)
+```
+
+Cabinet Data
+------------
+Integrate [Raw ParlGov Cabinet Data](../../data/raw/view_cabinet.csv), [Raw European Representative Democracy Data](../../data/raw/Bergmann_Muller_Strom_Cabinets-Dataset.csv), and [Termination Cause Data](../../data/raw/imputing_termination_cause.csv)  
+
+```r
+#Load & tidy Parlgov Data and with Coalition Data Set of Bergmann et al.
+parlgov <- read_csv(file = "data/raw/view_cabinet.csv")  %>%
+  filter(country_name == "Austria" | country_name == "Belgium" | country_name == "Denmark" |
+         country_name == "Finland" | country_name == "Germany" | country_name == "Ireland" |
+         country_name == "Netherlands" | country_name == "Norway" | country_name == "Sweden") %>%
+  select(country_name_short, election_date, start_date, cabinet_name, caretaker, cabinet_party, prime_minister,
+         seats, election_seats_total, party_name_short, party_name_english, party = party_id) %>%
+  mutate(party = recode(party,#Recode merger parties
+                        `1113` = 1029,
+                        `1487` = 1029,
+                        `255` = 772),
+         id3 = paste(party_name_short,country_name_short, sep=".")) %>%
+  add_column(cmp_id = 0)
+
+ids <- read_csv(file = "data/raw/cmp_code_parlgov.csv") %>%
+  drop_na(cmp_id)
+for(i in 1:dim(ids)[1]){
+  select <- which(parlgov$id3==ids$parlgov_id[i])
+  parlgov$cmp_id[select] <- ids$cmp_id[i]
+}
+
+coalitiondata <- read_csv(file = "data/raw/Bergmann_Muller_Strom_Cabinets-Dataset.csv")  %>%
+  filter(v001x==1 | v001x==2 | v001x==3 | v001x==4| v001x==6 | v001x==9 |
+         v001x==12|v001x==13 |v001x==16) %>%
+  select(cabinet_name = v003x, termination_cause = v217y, no_cabinetparties = v051y, govtype = v058y2) %>%
+    mutate(cabinet_name = as.character(cabinet_name),
+           cabinet_name = recode(cabinet_name,
+                               "Hansson" = "Hansson I",
+                               "F\xe4lldin I" = "Falldin I",
+                               "F\xe4lldin II" = "Falldin II",
+                               "F\xe4lldin III" = "Falldin III",
+                               "Bondevik" = "Bondevik I",
+                               "de Valera VI" = "Valera VI",
+                               "de Valera VII" = "Valera VII",
+                               "de Valera VIII" = "Valera VIII",  
+                               "FitzGerald II"="Fitzgerald II",                     
+                               "Schroeder" = "Schroeder I",
+                               "Kohl V"="Kohl IV",
+                               "Kohl VI"="Kohl V",
+                               "Juncker" = "Juncker I",
+                               "Lipponen" = "Lipponen I",
+                               "von Fieandt" = "Fieandt",
+                               "T\xf6rngren" = "Torngren",
+                               "Karjalainen Iia" = "Karjalainen II",
+                               "Karjalainen Iib" = "Karjalainen III",
+                               "Sukselainen Ib"= "Sukselainen II",   
+                               "Sukselainen Ic"= "Sukselainen I",              
+                               "Sukselainen IV"=  "Miettunen I",                 
+                               "Holkeri a"="Holkeri I",
+                               "Holkeri b"="Holkeri II",            
+                               "Aho a"="Aho I",                 
+                               "Aho b"="Aho II",
+                               "Paasikivi III"="Paasikivi II",
+                               "Rasmussen IV" = "Rasmussen N IV",
+                               "Rasmussen I" = "Rasmussen N I",
+                               "Rasmussen III" = "Rasmussen N III",         
+                               "Rasmussen II" = "Rasmussen N II",    
+                               "Schl\xfcter I" = "Schluter I",
+                               "Schl\xfcter II" = "Schluter II",
+                               "Schl\xfcter III" = "Schluter III",
+                               "Schl\xfcter IV" = "Schluter IV",
+                               "Schl\xfcter V" = "Schluter V",
+                               "Hansen" = "Hansen I",
+                               "Spaak" = "Spaak I",
+                               "Dehaenen I"="Dehaene I",
+                               "Van den Boeynants I"="Vanden Boeynants I",                
+                               "Van den Boeynants II"="Vanden Boeynants II",     
+                               "Tindemans"="Tindemans I",             
+                               "Eyskens" = "Eyskens G I",
+                               "Eyskens II" = "Eyskens G II",
+                               "Eyskens III"="Eyskens G III",          
+                               "Eyskens V"="Eyskens G V",            
+                               "Eyskens IV"="Eyskens G IV",
+                               "M Eyskens" = "Eyskens M",
+                               "Van Houtte" = "Houtte",
+                               "Klima" = "Klima I",   
+                               "Vranizky V"="Vranitzky V"))
+
+cabinet_data <- left_join(x = parlgov, y = coalitiondata, by="cabinet_name") %>%
+  mutate(start_date = as.Date(start_date),
+         election_date = as.Date(election_date))
+
+#Add termination causes
+#source("imputing_termination_cause.R")
+#termination_cause only goes to 1996, rest own coding, see csv "imputing_termination_cause" for coding decisions
+erd <- read_csv(file = "data/raw/imputing_termination_cause.csv")
 ```
 
 
