@@ -451,4 +451,12 @@ df%>%
     lab_size = 2
   )
 
+df %>%
+  ggplot(aes(x = d_issue_distance)) +
+  geom_histogram(fill = "gray85", colour = "black", binwidth = 10) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "", y="", title = "Δ Issue Distance \n Mean: -1.12, Standard Deviation: 22.44")
+ggsave(filename = "report/figures/Distributions_DV.png", width=8, height=3.75, dpi=900)
+
 

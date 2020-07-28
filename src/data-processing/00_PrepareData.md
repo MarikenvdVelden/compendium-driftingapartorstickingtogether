@@ -495,37 +495,18 @@ df%>%
 ![Figure](../../report/figures/corrplot.png)
 
 
-Dependent Variables
+Dependent Variable
  -------
-* News Finds Me Perception (**H1**)
-* Political Knowledge (**H2**)
-* Political Interest (**H2**)
-* Electoral Participation (**H3**)
-
  ``` r
-##  Dependent Variables
-rbind(tibble(freq = round(table(df$nfm)/dim(df)[1],2),
-             values = 1:7,
-             id = "News Finds Me Perception \n Mean: 3.72, Standard Deviation: 1.27"),
-      tibble(freq = round(table(df$polknow)/dim(df)[1],2),
-             values = c(0,0.33, 0.67,1),
-             id = "Political Knowledge \n Mean: 0.30, Standard Deviation: 0.32"),
-      tibble(freq = round(table(df$polint)/dim(df)[1],2),
-             values = 1:7,
-             id = "Political Interest \n Mean: 3.99, Standard Deviation: 1.23"),
-      tibble(freq = round(table(df$polpart)/dim(df)[1],2),
-             values = 1:5,
-             id = "Political Participation \n Mean: 3.86, Standard Deviation: 1.23")) %>%
-  ggplot(aes(x = values, y = freq)) +
-  geom_col(fill = "gray85", colour = "black") +
+##  Dependent Variable
+df %>%
+  ggplot(aes(x = d_issue_distance)) +
+  geom_histogram(fill = "gray85", colour = "black", binwidth = 10) +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5)) +
-  facet_wrap(~ id, ncol = 3, scales = "free_x") +
-  scale_y_continuous(labels = scales::percent) +
-  labs(x = "", y="", title = "Dependent Variables")
+  labs(x = "", y="", title = "Δ Issue Distance \n Mean: -1.12, Standard Deviation: 22.44")
 ```
-
-![Figure](../../report/figures/Distributions_DV_PollFish.png)
+![Figure](../../report/figures/Distributions_DV.png)
 
 Independent Variables
 -------
