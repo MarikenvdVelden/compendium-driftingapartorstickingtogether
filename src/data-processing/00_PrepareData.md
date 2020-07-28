@@ -107,7 +107,8 @@ cmp <- cmp %>%
                        `41222` = 41221,
                        `21221` = 21321),
          id = paste(country,substr(electiondate,1,4),party1, sep="-")) %>%
-  select(country, electiondate, electionid_ext, id, id2, party1, party2, sum_difs, rile_difs) %>%
+  select(country, electiondate, electionid_ext, id, id2, party1, party2, sum_difs,
+         rile_party1, rile_party2, rile_difs) %>%
   drop_na(sum_difs)
 ```
 
@@ -135,9 +136,10 @@ party <- row.names(cmpcode)
 for(i in 1:length(party)){
   for(j in 1:length(unique(polls$country))){
     select <- which(polls$party==row.names(cmpcode)[i] & polls$country==unique(polls$country)[j])
-    polls$party[select] <- cmpcode[row.names(cmpcode)[i],j]
+    tmp <- as.character(unique(polls$country)[j])
+    polls$party[select] <- cmpcode[row.names(cmpcode)[i], tmp]
   }
-}
+} 
 
 polls <- polls %>%
   mutate(party = as.numeric(party),
@@ -293,18 +295,20 @@ for(i in 1:length(cabinet_names)){
 }
 
 cabinet_data <- cabinet_data %>%
-        mutate(cabinet_name = lag(cabinet_name),
-               caretaker = lag(caretaker),
-               cabinet_party = lag(cabinet_party),
-               prime_minister = lag(prime_minister),
-               seats = lag(seats),
-               election_seats_total = lag(election_seats_total),
-               termination_cause = lag(termination_cause),
-               no_cabinetparties = lag(no_cabinetparties),
-               govtype = lag(govtype)) %>%
-       select(country_name = country_name_short, election_date, start_date, cmp_id, party,
-              cabinet_party, prime_minister, cabinet_name, no_cabinetparties, caretaker, govtype,
-              termination_cause, seats, tot_seats = election_seats_total)
+  group_by(country_name, election_date) %>%
+  mutate(cabinet_name = lag(cabinet_name),
+    caretaker = lag(caretaker),
+    cabinet_party = lag(cabinet_party),
+    prime_minister = lag(prime_minister),
+    seats = lag(seats),
+    election_seats_total = lag(election_seats_total),
+    termination_cause = lag(termination_cause),
+    no_cabinetparties = lag(no_cabinetparties),
+    govtype = lag(govtype),
+    match_id = paste(election_date, cmp_id, sep=".")) %>%
+  select(match_id, country_name = country_name_short, election_date, start_date, cmp_id, party,
+         cabinet_party, prime_minister, cabinet_name, no_cabinetparties, caretaker, govtype,
+         termination_cause, seats, tot_seats = election_seats_total)
 ```
 
 Integrate Datasets
@@ -312,51 +316,45 @@ Integrate Datasets
 ``` r
 cmp <- left_join(x = cmp, y = polls, by = "id")
 cmp <- cmp %>%
-  select(country, electiondate, electionid_ext, id2, party1, party2, sum_difs, rile_difs,
-         polls_party1 = mean_polls) %>%
+  select(country:electionid_ext, id2, party1:rile_difs, polls_party1 = mean_polls) %>%
   mutate(id = paste(country,substr(electiondate,1,4),party2, sep="-"))
 cmp <- left_join(x = cmp, y = polls, by = "id")
 
 cmp <- cmp %>%
-  select(country, electiondate, electionid_ext, id2, party1, party2, sum_difs, rile_difs,
-         polls_party1, polls_party2 = mean_polls) %>%
+  mutate(pcombi1 = paste0(party1, party2),
+         pcombi2 = paste0(party2, party1),
+         unique_pcombi = as.numeric(pcombi1==pcombi2)) %>%
+  filter(unique_pcombi==0) %>%
+  select(country:party2, pcombi=pcombi1, sum_difs:polls_party1, polls_party2 = mean_polls) %>%
   mutate(match_id = paste(electiondate, party1, sep="."))
 
 df <- left_join(cmp, cabinet_data, by = "match_id") %>%
   mutate(match_id = paste(electiondate, party2, sep=".")) %>%
   select(match_id, country:electiondate, start_date, electionid_ext, party = party1,
-         partner = party2, sum_difs, rile_difs, polls_party = polls_party1,
+         partner = party2, pcombi, sum_difs, rile_party = rile_party1,
+         rile_partner=rile_party2, rile_difs, polls_party = polls_party1,
          polls_partner = polls_party2, cabinet_party, pm_party = prime_minister, seats_party = seats)
 
 df <- left_join(df, cabinet_data, by = "match_id") %>%
   select(country:electiondate, start_date = start_date.x, electionid_ext,
          party = party.x, partner:polls_partner, cabinet_party = cabinet_party.x,
          cabinet_partner = cabinet_party.y, pm_party, pm_partner = prime_minister, seats_party,
-         seats_partner = seats, tot_seats, cabinet_name:termination_cause)
-
-#delete pairs of same party
-df <- df %>%
-  filter(party != partner) %>%
-  drop_na(country)
-
-# Identify each pair with an unique id & delete combinations that are duplicates
-pair <- matrix(NA, dim(df)[1],1)
-for(i in 1:dim(df)[1]){
-   if(is.na(pair[i])){
-     pair[c(which(df$party==df$party[i] & df$partner==df$partner[i]),
-     which(df$party==df$partner[i] & df$partner==df$party[i]))] <- i
-   }
-}
-electionid <- with(df, interaction(country, electiondate, drop=TRUE))
-unique_elections <- unique(electionid)
-is_duplicate <- matrix(NA, dim(df)[1])
-
-for(i in 1:length(unique_elections)){
-  where <- which(electionid==unique_elections[i])   
-  is_duplicate[where] <- duplicated(pair[which(electionid==unique_elections[i]),])
-}
-duplicate<-which(is_duplicate==TRUE)
-df<-df[-duplicate,]
+         seats_partner = seats, tot_seats, cabinet_name:termination_cause) %>%
+  mutate(first_election = ifelse(electionid_ext=="11.17/09/1944",1,
+                          ifelse(electionid_ext=="12.08/10/1945",1,
+                          ifelse(electionid_ext=="13.30/10/1945",1,
+                          ifelse(electionid_ext=="14.18/03/1945",1,
+                          ifelse(electionid_ext=="21.17/02/1946",1,
+                          ifelse(electionid_ext=="22.17/05/1946",1,
+                          ifelse(electionid_ext=="41.14/08/1949",1,
+                          ifelse(df$electionid_ext=="42.09/10/1949",1,
+                          ifelse(electionid_ext=="53.04/02/1948",1,0))))))))),
+         termination_cause = replace_na(termination_cause, 0),
+         unique_id = paste(electionid_ext, pcombi, sep=".")) %>%
+  filter(!duplicated(unique_id)) %>%
+  select(-unique_id) %>%
+  filter(first_election==0) %>%
+  select(-first_election)
 ```
 
 
