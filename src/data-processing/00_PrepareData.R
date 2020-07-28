@@ -456,7 +456,7 @@ df %>%
   geom_histogram(fill = "gray85", colour = "black", binwidth = 10) +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5)) +
-  labs(x = "", y="", title = "Δ Issue Distance \n Mean: -1.12, Standard Deviation: 22.44")
+  labs(x = "Range: -91.7 - 74.2", y="", title = "Δ Issue Distance \n Mean: -1.12, Standard Deviation: 22.44")
 ggsave(filename = "report/figures/Distributions_DV.png", width=8, height=3.75, dpi=900)
 
 
