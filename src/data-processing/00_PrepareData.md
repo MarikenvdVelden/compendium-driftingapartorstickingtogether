@@ -2,7 +2,7 @@ Prepare Integrated Data
 ================
 
 - DESCRIPTION: Clean and construct measures according to manuscript (pp. XXX)
-- CREATES: [Cleaned Data for Analysis](../../data/intermediate/cleaned_dyadic_data.csv)
+- CREATES: [Cleaned Data for Analysis](../../data/intermediate/cleaned_dyadic_data.RData)
 - DEPENDS: [Raw Manifesto Project Data](../../data/raw/MPDataset_MPDS2019b.csv), [Raw ParlGov Cabinet Data](../../data/raw/view_cabinet.csv), [Raw European Representative Democracy Data](../../data/raw/Bergmann_Muller_Strom_Cabinets-Dataset.csv), [Raw Opinion Poll Data](../../data/raw/polldata_combined.RData)
 
 Content
@@ -468,30 +468,23 @@ df <- df %>%
 #Check Correlations
 # as a default this function outputs a correlation matrix plot
 df%>%
-  select(mobnews, tradnews, hs, surv, esc, pt,
-         ent, social, nfm, corona, trust_online, trust_trad,
-         polsoph, polpart) %>%
+  select(d_issue_distance, experience, popularity,
+         conflict, no_cabinetparties,
+         rile, enps, gdp) %>%
   ggstatsplot::ggcorrmat(
     type = "robust", # correlation method
     sig.level = 0.05, # threshold of significance
     p.adjust.method = "holm", # p-value adjustment method for multiple comparisons
-    cor.vars = c(mobnews:polpart), # a range of variables can be selected
+    cor.vars = c(d_issue_distance:gdp), # a range of variables can be selected
     cor.vars.names = c(
-      "Mobile News Usage", # variable names
-      "Traditional News Usage", # variable names
-      "Habit Strength",
-      "Surveillance",
-      "Escapism",
-      "Entertainment",
-      "Passing Time",
-      "Social",
-      "News Finds Me Perception",
-      "Corona Knowledge",
-      "Trust Online Media",
-      "Trust Traditional Media",
-      "Political Sophistication",
-      "Political Participation"
-    ),
+      "Δ Issue Distance", # variable names
+      "Experience", # variable names
+      "Popularity",
+      "Conflict",
+      "# Coalition Parties",
+      "Ideological Position",
+      "ENPS",
+      "GDP"),
     matrix.type = "upper", # type of visualization matrix
     colors = c("#B2182B", "white", "darkgreen"),
     title = "Correlalogram for Variables under Study",
@@ -499,7 +492,7 @@ df%>%
   )
 
 ```
-![Figure](../../report/figures/Corrplot_Pollfish.png)
+![Figure](../../report/figures/corrplot.png)
 
 
 Dependent Variables

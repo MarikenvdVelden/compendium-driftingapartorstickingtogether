@@ -412,13 +412,43 @@ pec <- read_csv(file = "data/raw/PEC_Golder2006.csv") %>%
 
 df <- df %>%
   left_join(y = pec, by = "id") %>%
+  mutate(unique_id = paste(electionid_ext, pcombi, sep=".")) %>%
+  filter(!duplicated(unique_id)) %>%
   select(country:electionid_ext, year, party:pcombi, sum_difs, l_sum_difs, 
          d_issue_distance, seats_party, seats_partner,tot_seats, polls_party, 
          polls_partner, popularity, cabinet_name:termination_cause,
          termination_cause2, termination_cause3, conflict, cabinet_pair, duration_months,experience,
-         rile_party:rile_difs, rile:rile_median, enps:pec_golder)
-
+         rile_party:rile_difs, rile:rile_median, enps:pec_golder)%>%
+  drop_na(d_issue_distance) %>%
+  drop_na(popularity)
 rm(controls, cutoffs_rile, pec, tmp, i, select)
 
+save(df, file="data/intermediate/cleaned_dyadic_data.RData")
+
+#Check Correlations
+# as a default this function outputs a correlation matrix plot
+df%>%
+  select(d_issue_distance, experience, popularity,
+         conflict, no_cabinetparties,
+         rile, enps, gdp) %>%
+  ggstatsplot::ggcorrmat(
+    type = "robust", # correlation method
+    sig.level = 0.05, # threshold of significance
+    p.adjust.method = "holm", # p-value adjustment method for multiple comparisons
+    cor.vars = c(d_issue_distance:gdp), # a range of variables can be selected
+    cor.vars.names = c(
+      "Δ Issue Distance", # variable names
+      "Experience", # variable names
+      "Popularity",
+      "Conflict",
+      "# Coalition Parties",
+      "Ideological Position",
+      "ENPS",
+      "GDP"),
+    matrix.type = "upper", # type of visualization matrix
+    colors = c("#B2182B", "white", "darkgreen"),
+    title = "Correlalogram for Variables under Study",
+    lab_size = 2
+  )
 
 
