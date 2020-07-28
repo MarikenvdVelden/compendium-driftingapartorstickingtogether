@@ -324,16 +324,12 @@ df <- left_join(df, cabinet_data, by = "match_id") %>%
 rm(cabinet_data,cmp, polls)
 
 #Mutate data
+df <- slide(data = df, Var = "sum_difs", TimeVar = "electiondate", GroupVar = "pcombi", NewVar = "l_sum_difs") 
 df <- df %>%
-  mutate(id_time = paste(electionid_ext, pcombi, sep = ".")) %>%
-  group_by(id_time) %>%
   mutate(pcombi = as.numeric(pcombi),
          year = substr(electiondate, 1,4),
          year = as.numeric(year),
-         l_sum_difs = lag(sum_difs),
-         d_sum_difs = sum_difs - l_sum_difs,
-         sum_seats = seats_party + seats_partner,
-         seat_share = (sum_seats/tot_seats)*100,
+         d_issue_distance = sum_difs-l_sum_difs,
          cabinet_pair = ifelse(cabinet_party + cabinet_partner==2,1,0),
          termination_cause2 = ifelse(cabinet_pair==1 & termination_cause==0, 1, #Recode termination cause so that no coalition dyads do not have a termination cause
                               ifelse(cabinet_pair==1 & termination_cause==1, 2,
@@ -346,7 +342,6 @@ df <- df %>%
          conflict = ifelse(termination_cause3==2, 1, #where conflict is ref. category
                     ifelse(termination_cause3==3, 2, termination_cause3)),#and voluntary early & regular end of term are 1 category
          popularity = log((polls_party + polls_partner)/(seats_party + seats_partner)),
-         
          rile = ifelse(rile_party<0 & rile_partner<0,0, 
                 ifelse(rile_party>0 & rile_partner>0,0,1))) %>%#rile:  being on other side = 1, same side = 0
   add_column(rile_mean = 0,
@@ -387,12 +382,43 @@ tmp <- tmp %>%
 df <- df%>%
   mutate(match_id = paste(cabinet_name, pcombi, sep=".")) %>%
   left_join(y=tmp, by="match_id") %>%
-  select(country:rile_median, experience) %>%
-  mutate(experience = replace_na(experience, 0))
+  select(country:rile_median, 
+         experience) %>%
+  mutate(experience = replace_na(experience, 0)) 
 
-rm(cutoffs_rile, tmp, elections, i, pairs, select)
+#add controls
+controls <- read_csv(file = "data/raw/controls.csv") %>%
+  mutate(id = paste(counrty, year, sep = "."),
+         type_conflict = replace_na(type_conflict,0)) %>%
+  select(enps:id)
 
-#4c. Add controls: ENPS & Economic Performance
-source("controls.R") 
+df <- df %>%
+  mutate(id = paste(country, year, sep=".")) %>%
+  left_join(y = controls, by = "id") %>%
+  mutate(year = ifelse(electionid_ext=="13.22/09/1953", 1954,# For tscs reasons, double election years can't be dealed with
+                ifelse(electionid_ext=="53.24/11/1982", 1983,# (Denemarken 1953, iceland 1969 en Ierland 1982)
+                ifelse(electionid_ext=="15.25/10/1959", 1960, year))),# therefore 2nd election is coded as year later
+         pec_bergman = ifelse(country=="Norway" & year == 1965, 1,
+                       ifelse(country=="Norway" & year == 1981, 1,
+                       ifelse(country=="Norway" & year == 1989, 1,
+                       ifelse(country=="Norway" & year == 2001, 1,
+                       ifelse(country=="Sweden" & year == 2006, 1,
+                       ifelse(country=="Ireland" & year == 2007, 1, 0)))))))#Control for pre-coalition agreements Bergman
+
+#Control for pre-coalition agreements Golder's BJPS 2006
+pec <- read_csv(file = "data/raw/PEC_Golder2006.csv") %>%
+  mutate(id = paste(country, year, sep=".")) %>%
+  select(pec_golder = pec, id)
+
+df <- df %>%
+  left_join(y = pec, by = "id") %>%
+  select(country:electionid_ext, year, party:pcombi, sum_difs, l_sum_difs, 
+         d_issue_distance, seats_party, seats_partner,tot_seats, polls_party, 
+         polls_partner, popularity, cabinet_name:termination_cause,
+         termination_cause2, termination_cause3, conflict, cabinet_pair, duration_months,experience,
+         rile_party:rile_difs, rile:rile_median, enps:pec_golder)
+
+rm(controls, cutoffs_rile, pec, tmp, i, select)
+
 
 
