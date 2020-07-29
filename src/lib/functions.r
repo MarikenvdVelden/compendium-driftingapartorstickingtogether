@@ -24,12 +24,12 @@ calculate_sum_difs <- function(cmp){
     }
     if(i==1){
       tot <- mutate(difference, 
-                    sum_difs = apply(difference[6:((dim(difference)[2]))], 1, sum),
+                    sum_difs = apply(difference[6:((dim(difference)[2]))], 1, sum, na.rm=T),
                     electionid_ext = rep(unique_elections[i], dim(difference)[1]))
     }
     else{
       difference <- mutate(difference, 
-                           sum_difs = apply(difference[6:((dim(difference)[2]))], 1, sum),
+                           sum_difs = apply(difference[6:((dim(difference)[2]))], 1, sum, na.rm=T),
                            electionid_ext = rep(unique_elections[i], dim(difference)[1]))
       tot <- bind_rows(tot, difference)
       }

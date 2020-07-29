@@ -8,8 +8,8 @@ cmp <- read_csv("data/raw/MPDataset_MPDS2019b.csv")
 
 cmp <- cmp %>%
   filter(country == 42 | country == 21 | country == 41 | 
-           country == 53 | country == 22 | country == 12 | country == 14 |
-           country == 11 | country == 13 | country == 15 ) %>% #Select Countries under Study
+         country == 53 | country == 22 | country == 12 | 
+         country == 14 | country == 11 | country == 13 ) %>% #Select Countries under Study
   mutate( #Calculate Issue Positions
     issue1 = ((per401 + per402 + per407 + per414 + per702) - 
                 (per404 + per405 + per406 + per409 + per412 + per413 + per415 + per701 + per403)),#pos economy
@@ -74,8 +74,7 @@ cmp <- cmp %>%
                        `21221` = 21321),
          id = paste(country,substr(electiondate,1,4),party1, sep="-")) %>%
   select(country, electiondate, electionid_ext, id, id2, party1, party2, sum_difs, 
-         rile_party1, rile_party2, rile_difs) %>%
-  drop_na(sum_difs)
+         rile_party1, rile_party2, rile_difs) 
 
 #Load & Tidy poll data from Van Der Velden (2015), Jennings and Wlezien (2014) and Askham-Christensen (2012) 
 load("data/raw/polldata_combined.RData")
@@ -84,9 +83,9 @@ polls <- data %>%
   pivot_longer(cols = `party 1`:`party 42`,
                names_to = "party",
                values_to = "polls") %>%
-  filter(country == "Austria" | country == "Belgium" | country == "Denmark" |
-           country == "Finland" | country == "Germany" | country == "Ireland" |
-           country == "Netherlands" | country == "Norway" | country == "Sweden") %>%
+  filter(country == "Austria"     | country == "Belgium" | country == "Denmark" |
+         country == "Finland"     | country == "Germany" | country == "Ireland" |
+         country == "Netherlands" | country == "Norway"  | country == "Sweden") %>%
   mutate(year = as.character(year),
          month = as.character(month),
          month = ifelse(nchar(month)==1, paste0("0",month), month),
@@ -117,8 +116,9 @@ polls <- polls %>%
                        `21221` = 21321),
          country_code = substr(party,1,2),
          id = paste(country, date, sep=".")) %>%
+  drop_na(party) %>%
+  distinct_all() %>%
   add_column(event = NA) %>%
-  drop_na(party) %>% 
   arrange(country_code)
 
 #add election dates
@@ -140,7 +140,8 @@ polls <- polls %>%
          month_teller = abs(event-date),#add teller to select 6 months before election
          month_teller = round(as.numeric(month_teller)/365 *12,0),
          event = paste(country, event, sep = ".")) %>%
-  add_column(mean_polls = 0) %>%
+  add_column(mean_polls = 0,
+             mean_polls2 = 0) %>%
   drop_na(polls)
 
 #Average polls of 6 months prior to election  
@@ -154,34 +155,80 @@ for(i in 1: length(unique(polls$event))){
   }
 }
 
+#Average polls of 12 months prior to election  
+for(i in 1: length(unique(polls$event))){
+  tmp <- unique(polls$event)
+  party <- unique(polls$party[which(polls$event==tmp[i])])
+  for(j in 1: length(party)){
+    tmpp <- polls[which(polls$event==tmp[i] & polls$month_teller < 13 & polls$month_teller > 0 & polls$party==party[j]), "polls"]
+    if(dim(tmpp)[1]>0){
+      polls$mean_polls2[which(polls$event==tmp[i])] <- round(sum(tmpp, na.rm=T)/(12 - length(which(is.na(tmpp)))),2)}
+  }
+}
+
 polls <- polls %>%
   filter(id == event) %>%
   mutate(id = paste(country,year,party, sep="-")) %>%
-  select(id, mean_polls)
+  select(id, mean_polls, mean_polls2)
 
 rm(cmpcode,data,id,legend,tmpp,countries,end,i,j,party,select,start,tmp)
 
 #Load & tidy Parlgov Data and with Coalition Data Set of Bergmann et al.
 parlgov <- read_csv(file = "data/raw/view_cabinet.csv")  %>%
-  filter(country_name == "Austria" | country_name == "Belgium" | country_name == "Denmark" |
-         country_name == "Finland" | country_name == "Germany" | country_name == "Ireland" |
-         country_name == "Netherlands" | country_name == "Norway" | country_name == "Sweden") %>%
+  filter(country_name == "Austria"     | country_name == "Belgium" | country_name == "Denmark" |
+         country_name == "Finland"     | country_name == "Germany" | country_name == "Ireland" |
+         country_name == "Netherlands" | country_name == "Norway"  | country_name == "Sweden") %>%
   select(country_name_short, election_date, start_date, cabinet_name, caretaker, cabinet_party, prime_minister, 
          seats, election_seats_total, party_name_short, party_name_english, party = party_id) %>%
   mutate(party = recode(party,#Recode merger parties
                         `1113` = 1029,
                         `1487` = 1029,
                         `255` = 772),
+         cabinet_name = recode(cabinet_name,
+                               `M\xfcller I` = "Moeller I",
+                               "M\xfcller II" = "Moeller II",
+                               "Br\xfcning I" = "Breuning I",
+                               "Br\xfcning II" = "Breuning II",
+                               "Br\xfcning III" = "Breuning III",
+                               "Br\xfcning IV" = "Breuning IV",
+                               "Kivim\xe4ki I" = "Kivimaki I",
+                               "Kivim\xe4ki II" = "Kivimaki II",
+                               "L\xf8vland" = "Lovland",
+                               `Dollfu\xdf` = "Dollfuss"),
          id3 = paste(party_name_short,country_name_short, sep=".")) 
 
 #add cmp code to parlgov
 ids <- read_csv(file = "data/raw/view_party.csv") %>%
-  mutate(id3 = paste(party_name_short, country_name_short, sep="."))%>%
+  mutate(id3 = paste(party_name_short, country_name_short, sep="."),
+         cmp = recode(cmp,#Recode merger parties
+                        `21914` = 21917,
+                        `21221` = 21321,
+                        `23111` = 23113,
+                        `23112` = 23113,
+                        `41112` = 41111,
+                        `41113` = 41111,
+                        `41223` = 41221,
+                        `41222` = 41221,
+                        `21221` = 21321),
+         cabinet_name = recode(cabinet_name,
+                               "M\xfcller I" = "Moeller I",
+                               "M\xfcller II" = "Moeller II",
+                               "Br\xfcning I" = "Breuning I",
+                               "Br\xfcning II" = "Breuning II",
+                               "Br\xfcning III" = "Breuning III",
+                               "Br\xfcning IV" = "Breuning IV",
+                               "Kivim\xe4ki I" = "Kivimaki I",
+                               "Kivim\xe4ki II" = "Kivimaki II",
+                               "L\xf8vland" = "Lovland",
+                               "Dollfu\xdf" = "Dolfuss"))%>%
   select(id3, cmp_id = cmp) %>%
-  drop_na(cmp_id)
+  drop_na(cmp_id) %>%
+  drop_na(cabinet_name)  %>%
+  distinct_all()
 
-parlgov <- left_join(parlgov, ids, by="id3") %>%
-  drop_na(cmp_id)
+parlgov <- full_join(parlgov, ids, by="id3") %>%
+  drop_na(cmp_id) %>%
+  distinct_all()
   
 coalitiondata <- read_csv(file = "data/raw/Bergmann_Muller_Strom_Cabinets-Dataset.csv")  %>%
   filter(v001x==1 | v001x==2 | v001x==3 | v001x==4| v001x==6 | v001x==9 | 
@@ -249,11 +296,12 @@ cabinet_data <- left_join(x = parlgov, y = coalitiondata, by="cabinet_name") %>%
 #Add termination causes
 #source("imputing_termination_cause.R") 
 #termination_cause only goes to 1996, rest own coding, see csv "imputing_termination_cause" for coding decisions
-erd <- read_csv(file = "data/raw/imputing_termination_cause.csv")
+erd <- read_csv(file = "data/raw/imputing_termination_cause.csv") %>%
+  select(cabinet_name, termination_cause)
 
 cabinet_names <- erd$cabinet_name
 for(i in 1:length(cabinet_names)){
-  cabinet_data$termination_cause[which(cabinet_data$cabinet_name==cabinet_names[i])] <- rep(erd$termination_cause[which(erd$cabinet_name==cabinet_names[i])], length(which(cabinet_data$cabinet_name==cabinet_names[i])))
+  cabinet_data$termination_cause[which(cabinet_data$cabinet_name==cabinet_names[i])] <- erd$termination_cause[i]
 }
 
 cabinet_data <- slide(data = cabinet_data, Var = "cabinet_name", TimeVar = "start_date", GroupVar = "cmp_id", NewVar = "cabinet_name1")
@@ -275,6 +323,10 @@ cabinet_data <- cabinet_data %>%
          cabinet_party=cabinet_party1, prime_minister=prime_minister1, cabinet_name=cabinet_name1, 
          no_cabinetparties=no_cabinetparties1, caretaker=caretaker1, govtype=govtype1,
          termination_cause=termination_cause1, seats=seats1, tot_seats = election_seats_total1)
+
+party <- unique(cabinet_data$cmp_id)
+cabinet_data$duration_months[cabinet_data$cmp_id==party[i]]
+
 
 rm(coalitiondata,erd,ids,parlgov,cabinet_names,i)
 
@@ -330,18 +382,19 @@ df <- df %>%
          year = substr(electiondate, 1,4),
          year = as.numeric(year),
          d_issue_distance = sum_difs-l_sum_difs,
-         cabinet_pair = ifelse(cabinet_party + cabinet_partner==2,1,0),
-         termination_cause2 = ifelse(cabinet_pair==1 & termination_cause==0, 1, #Recode termination cause so that no coalition dyads do not have a termination cause
-                              ifelse(cabinet_pair==1 & termination_cause==1, 2,
-                              ifelse(cabinet_pair==1 & termination_cause==2, 3, 0))),
+         cabinet_pair = cabinet_party + cabinet_partner,
+         termination_cause2 = ifelse(cabinet_pair==2 & termination_cause==0, 1, #Recode termination cause so that no coalition dyads do not have a termination cause
+                              ifelse(cabinet_pair==2 & termination_cause==1, 2,
+                              ifelse(cabinet_pair==2 & termination_cause==2, 3, 0))),
          termination_cause3 = recode(termination_cause2,
                                      `2` = 0,# 0 = no coalition dyad, 1= end of term, 2 = conflict, 3= voluntary early elections
                                      `0` = 3,
                                      `3` = 2,
                                      `1` = 1),
          conflict = ifelse(termination_cause3==2, 1, #where conflict is ref. category
-                    ifelse(termination_cause3==3, 2, termination_cause3)),#and voluntary early & regular end of term are 1 category
-         popularity = log((polls_party + polls_partner)/(seats_party + seats_partner)),
+                    ifelse(termination_cause3==3, 2, termination_cause3)),
+         sum_polls = polls_party + polls_partner,#and voluntary early & regular end of term are 1 category
+         popularity = ifelse(sum_polls==0, NA, log((polls_party + polls_partner)/(seats_party + seats_partner))),
          rile = ifelse(rile_party<0 & rile_partner<0,0, 
                 ifelse(rile_party>0 & rile_partner>0,0,1))) %>%#rile:  being on other side = 1, same side = 0
   add_column(rile_mean = 0,
@@ -382,10 +435,24 @@ tmp <- tmp %>%
 df <- df%>%
   mutate(match_id = paste(cabinet_name, pcombi, sep=".")) %>%
   left_join(y=tmp, by="match_id") %>%
-  select(country:rile_median, 
+  select(match_id, country:rile_median, 
          experience) %>%
   mutate(experience = replace_na(experience, 0)) 
 
+country <- unique(df$country)
+for(i in 1:length(country)){
+  id <- unique(df$pcombi[df$country==country[i]])
+  for(i in 1)
+  tmp <- tibble(duration = df$duration_months[which(df$pcombi==id[j])],
+                cabinet_name = df$cabinet_name[which(df$pcombi==unique(df$pcombi[df$country==country[i]])[1])],
+                pcombi = df$pcombi[which(df$pcombi==unique(df$pcombi[df$country==country[i]])[1])]) %>%
+    drop_na(duration) %>%
+    mutate(cum_duration = cumsum(duration),
+           id = paste(cabinet_name, pcombi, sep="."))
+}
+
+
+           
 #add controls
 controls <- read_csv(file = "data/raw/controls.csv") %>%
   mutate(id = paste(counrty, year, sep = "."),
@@ -412,17 +479,20 @@ pec <- read_csv(file = "data/raw/PEC_Golder2006.csv") %>%
 
 df <- df %>%
   left_join(y = pec, by = "id") %>%
-  mutate(unique_id = paste(electionid_ext, pcombi, sep=".")) %>%
+  filter(cabinet_pair>0) %>%
+  mutate(unique_id = paste(electionid_ext, pcombi, sep="."),
+         cabinet_pair = recode(cabinet_pair, 
+                               `1`=0,
+                               `2`=1)) %>%
   filter(!duplicated(unique_id)) %>%
   select(country:electionid_ext, year, party:pcombi, sum_difs, l_sum_difs, 
          d_issue_distance, seats_party, seats_partner,tot_seats, polls_party, 
          polls_partner, popularity, cabinet_name:termination_cause,
          termination_cause2, termination_cause3, conflict, cabinet_pair, duration_months,experience,
-         rile_party:rile_difs, rile:rile_median, enps:pec_golder)%>%
-  drop_na(d_issue_distance) %>%
+         rile_party:rile_difs, rile:rile_median, enps:pec_golder) %>%
   drop_na(popularity)
-rm(controls, cutoffs_rile, pec, tmp, i, select)
 
+rm(controls, cutoffs_rile, pec, tmp, i, select)
 save(df, file="data/intermediate/cleaned_dyadic_data.RData")
 
 #Check Correlations
@@ -451,12 +521,35 @@ df%>%
     lab_size = 2
   )
 
+##Dependent Variables
 df %>%
   ggplot(aes(x = d_issue_distance)) +
   geom_histogram(fill = "gray85", colour = "black", binwidth = 10) +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5)) +
-  labs(x = "Range: -91.7 - 74.2", y="", title = "Δ Issue Distance \n Mean: -1.12, Standard Deviation: 22.44")
-ggsave(filename = "report/figures/Distributions_DV.png", width=8, height=3.75, dpi=900)
+  labs(x = "Range: -73.1 - 71.4", y="", title = "Δ Issue Distance \n Mean: -1.26, Standard Deviation: 20.21")
+ggsave(filename = "report/figures/Distributions_DV.png", width=6, height=4, dpi=900)
+
+##Independent Variables
+rbind(tibble(freq = round(table(round(df$popularity,1)/dim(df)[1],2)),
+             values = round(df$popularity,1),
+             id = "Popularity \n Mean: -2.10, Standard Deviation: 1.45"),
+      tibble(freq = round(table(round(df$experience,1)/dim(df)[1],2)),
+             values = df$experience,
+             id = "Experience \n Mean: 62.11, Standard Deviation: 26.57"),
+      tibble(freq = round(table(df$termination_cause2)/dim(df)[1],2),
+             values = c("Conflict", "No Conflict", "Not a Government Pro"),
+             id = "Conflict \n Median: Not a Government Proto-Coalition"),
+      tibble(freq = round(table(df$ent)/dim(df)[1],2),
+             values = 1:7,
+             id = "Entertainment \n Mean: 3.59, Standard Deviation: 1.73")) %>%
+  ggplot(aes(x = values, y = freq)) +
+  geom_col(fill = "gray85", colour = "black") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  facet_wrap(~ id, ncol = 3) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_x_continuous(breaks = 1:7) +
+  labs(x = "", y="", title = "Independent Variable: Gratifications of the News")
 
 

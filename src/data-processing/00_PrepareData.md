@@ -388,7 +388,8 @@ df <- df %>%
                                      `1` = 1),
          conflict = ifelse(termination_cause3==2, 1, #where conflict is ref. category
                     ifelse(termination_cause3==3, 2, termination_cause3)),#and voluntary early & regular end of term are 1 category
-         popularity = log((polls_party + polls_partner)/(seats_party + seats_partner)),
+         psum_polls = polls_party + polls_partner,#and voluntary early & regular end of term are 1 category
+         popularity = ifelse(sum_polls==0, NA, log((polls_party + polls_partner)/(seats_party + seats_partner))),
          rile = ifelse(rile_party<0 & rile_partner<0,0,
                 ifelse(rile_party>0 & rile_partner>0,0,1))) %>%#rile:  being on other side = 1, same side = 0
   add_column(rile_mean = 0,
