@@ -108,7 +108,7 @@ cmp <- cmp %>%
                        `21221` = 21321),
          id = paste(country,substr(electiondate,1,4),party1, sep="-")) %>%
   select(country, electiondate, electionid_ext, id, id2, party1, party2, sum_difs,
-         rile_party1, rile_party2, rile_difs) 
+         rile_party1, rile_party2, rile_difs)
 ```
 
 Opinion Poll Data
@@ -508,6 +508,9 @@ df <- df %>%
          tot_months, experience, rile_party:rile_difs, rile:rile_median, enps:pec_golder) %>%
   drop_na(popularity)
 
+#Save Dataset
+save(df, file="data/intermediate/cleaned_dyadic_data.RData")
+
 #Check Correlations
 # as a default this function outputs a correlation matrix plot
 df%>%
@@ -648,96 +651,3 @@ rbind(tibble(freq = round(table(df$trust_online)/dim(df)[1],2),
   labs(x = "", y="", title = "Control Variables")
 ```
 ![Figure](../../report/figures/Distributions_Controls_PollFish.png)
-
-Missing Data
-====
-We employ the following criteria:
-
-- If 10\% or less of the values on the dimension are missing, then we re-code the missing values to the overall mean.
-- If 11\% or more of the values on the dimension are missing, then we re-code the missing values to a constant (for instance 0) and include a dummy variable indicating whether the response on the covariate was missing or not.
-
-```r
-#Check Missing Values
-#Check Missing Values
-tibble(Covariate = c("UGT: Entertainment","UGT: Escapism", "UGT: Habit Strength", "UGT: Passing Time",
-                     "UGT: Surveillance","UGT: Social", "News Finds Me Perception",
-                     "Knowledge about Corona","Mobile News Usage", "Traditional News Usage",
-                     "Political Sophistication", "Political Knowledge","Political Interest",
-                     "Political Participation", "Voting Behavior", "Trust in Online Media",
-                     "Trust in Traditional Media", "Epistemic Overconfidence",
-                     "Age","Gender"),
-       Percentage =c(round(sum(is.na(df$ent))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$esc))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$hs))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$pt))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$surv))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$social))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$nfm))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$corona))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$mobnews))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$tradnews))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$polsoph))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$polknow))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$polint))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$polpart))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$vote))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$trust_online))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$trust_trad))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$eo))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$age))/prod(dim(df)[1]),2),
-                     round(sum(is.na(df$gender))/prod(dim(df)[1]),2)))
-```
-
-| Covariate 					| Percentage	|
-|------------------------------------------------|---------------------|
-| UGT: Entertainment            		| 0.01		|
-| UGT: Escapism                  		| 0.01		|
-| UGT: Habit Strength            		| 0.01		|
-| UGT: Passing Time              		| 0.01  		|
-| UGT: Surveillance              		| 0.01   		|
-| UGT: Social					| 0.01		|
-| News Finds Me Perception		| 0			|
-| Knowledge about Corona		| 0			|
-| Mobile News Usage			| 0			|
-| Traditional News Usage			| 0 			|
-| Political Sophistication			| 0			|
-| Political Knowledge				| 0			|
-| Political Interest				| 0			|
-| Political Participation			| 0			|
-| Voting Behavior				| 0.35		|
-| Trust in Online Media			| 0			|
-| Trust in Traditional Media		| 0			|
-| Epistemic Overconfidence       	| 0.17		|
-| Age                            			| 0			|
-| Gender                         			| 0.02		|
-
- We recode the missing values of the variables `UGT: Entertainment`, `UGT: Escapism`, `UGT: Habit Strength`, `UGT: Passing Time`, `UGT: Surveillance`, `UGT: Social`, and `Gender`,  to the mean value of the respective variables.
-
- ```r
-df <- df %>%
-  select(-age_group) %>%
-  mutate(ent = tidyr::replace_na(ent, round(mean(df$ent, na.rm=T),0)),
-         esc = tidyr::replace_na(esc, round(mean(df$esc, na.rm=T),0)),
-         hs = tidyr::replace_na(hs, round(mean(df$hs, na.rm=T),0)),
-         pt = tidyr::replace_na(pt, round(mean(df$pt, na.rm=T),0)),
-         surv = tidyr::replace_na(surv, round(mean(df$surv, na.rm=T),0)),
-         social = tidyr::replace_na(social, round(mean(df$social, na.rm=T),0)),
-         gender = tidyr::replace_na(gender, "Male"))
-```
- We recode missing values of variable `Epistemic Overconfidence` to 0 and include the variable `Missing_eo` to the data, indicating whether the response on the covariate was missing (value of 1) or not (value of 0). For variable `Voting Behavior`, we recode missing values to "not mentioned" and include the variable `Missing_vote` to the data, indicating whether the response on the covariate was missing (value of 1) or not (value of 0).
-
-```r
-# Change missing values in variables where missings are >10%
-df <- df %>%
-  mutate(missing_eo = ifelse(is.na(eo), 1, 0),
-         eo = tidyr::replace_na(eo, 0),
-         missing_vote = ifelse(is.na(vote), 1, 0),
-         vote = tidyr::replace_na(vote, "not mentioned"))
-```
-
- Save data to `data/intermediate` and make public.
-
- ```r
- #save data
- write_csv(df, "../../data/intermediate/cleaned_PollFish.csv")
- ```
