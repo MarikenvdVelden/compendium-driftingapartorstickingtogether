@@ -19,7 +19,6 @@ Content
     -   [Independent Variables](#Independent-Variables)
     -   [Moderator](#Moderator)
     -   [Control Variables](#Control-Variables)
-- [Missing Data](#Missing-Data)
 
 Setup
 =====
