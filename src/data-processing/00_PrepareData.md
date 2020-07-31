@@ -594,5 +594,5 @@ rbind(tibble(
   facet_wrap(~ id, ncol = 3,scales = "free")  +
   labs(x="",y="", title = "Dichotomous Independent Variables")
 ```
-![Figure](../../report/figures/report/figures/Distributions_Continuous_IVs.png)
-![Figure](../../report/figures/report/figures/Distributions_Dichotomous_IVs.png)
+![Figure](../../report/figures/Distributions_Continuous_IVs.png)
+![Figure](../../report/figures/Distributions_Dichotomous_IVs.png)
