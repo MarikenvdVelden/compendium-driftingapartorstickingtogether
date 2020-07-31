@@ -499,25 +499,38 @@ df %>%
 ggsave(filename = "report/figures/Distributions_DV.png", width=6, height=4, dpi=900)
 
 ##Independent Variables
-rbind(tibble(freq = round(table(round(df$popularity,1)/dim(df)[1],2)),
-             values = round(df$popularity,1),
-             id = "Popularity \n Mean: -2.10, Standard Deviation: 1.45"),
-      tibble(freq = round(table(round(df$experience,1)/dim(df)[1],2)),
-             values = df$experience,
-             id = "Experience \n Mean: 62.11, Standard Deviation: 26.57"),
-      tibble(freq = round(table(df$termination_cause2)/dim(df)[1],2),
-             values = c("Conflict", "No Conflict", "Not a Government Pro"),
-             id = "Conflict \n Median: Not a Government Proto-Coalition"),
-      tibble(freq = round(table(df$ent)/dim(df)[1],2),
-             values = 1:7,
-             id = "Entertainment \n Mean: 3.59, Standard Deviation: 1.73")) %>%
-  ggplot(aes(x = values, y = freq)) +
-  geom_col(fill = "gray85", colour = "black") +
+rbind(tibble(
+  freq = c(round(df$popularity,2), round(df$experience, 2), df$no_cabinetparties, 
+           round(df$enps,2), round(df$gdp,2)),
+  id = c(rep("Popularity \n Mean: -2.15, Standard Deviation: 1.48 \n Range: -8.13 - 1.72", length(round(df$popularity,2))),
+         rep("Experience \n Mean: 0.16, Standard Deviation: 0.19 \n Range: 0 - 1", length(round(df$experience, 2))),
+         rep("Number of Coalition Parties \n Mean: 2.53, Standard Deviation: 1.08 \n Range: 1 - 5", length(round(df$no_cabinetparties, 2))),
+         rep("Effective Number of Parties (ENPS) \n Mean: 74.61, Standard Deviation: 7.04 \n Range: 57.75 - 88.14", length(round(df$enps, 2))),
+         rep("% Change GDP Growth \n Mean: 1.91, Standard Deviation: 2.65 \n Range: -4.98 - 6.42", length(round(df$gdp, 2)))))) %>%
+  ggplot(aes(x = freq)) +
+  geom_histogram(fill = "gray85", colour = "black") +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5)) +
-  facet_wrap(~ id, ncol = 3) +
-  scale_y_continuous(labels = scales::percent) +
-  scale_x_continuous(breaks = 1:7) +
-  labs(x = "", y="", title = "Independent Variable: Gratifications of the News")
+  facet_wrap(~ id, ncol = 3,scales = "free")  +
+  labs(x="",y="", title = "Continues Independent Variables")
+ggsave(filename = "report/figures/Distributions_Continuous_IVs.png", width=10, height=6, dpi=900)
 
-
+df %>%
+  mutate(conflict = recode(conflict, `0` = "No Conflict",
+                           `1` = "Conflict"),
+         cabinet_pair = recode(cabinet_pair, `0` = "Not a Government Proto-Coalition",
+                               `1` = "Government Proto-Coalition"),
+         rile = recode(rile, `0` = "Same Ideological Side",
+                       `1` = "Opposite Side")) %>%
+  rbind(tibble(
+    freq = c(conflict, cabinet_pair, rile),
+    id = c(rep("Conflict \n Median: No Conflict", length(df$conflict)),
+         rep("Being a Government Proto-Coalition \n Median: Not a Government Proto-Coalition", length(df$cabinet_pair)),
+         rep("Being on the Same Ideological Side \n Median: Same Ideological Side", length(df$rile))))) %>%
+  ggplot(aes(x = freq)) +
+  geom_histogram(fill = "gray85", colour = "black") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  facet_wrap(~ id, ncol = 2,scales = "free_x")  +
+  labs(x="",y="", title = "Dichotomous Independent Variables")
+ 

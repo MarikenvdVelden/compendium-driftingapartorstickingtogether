@@ -555,98 +555,46 @@ df %>%
 
 Independent Variables
 -------
-- Gratifications of the News (**RQ1**)
-	- Entertainment
-	- Escapisme
-	- Habit Strength
-	- Passing Time
-	- Surveillance
-- Mobile News Consumption (**H1**)
-- Knowledge about Corona (**RQ2**)
-- Political Sophistication (**H3**)
+- Popularity (**H1a**)
+- Experience (**H1b**)
+- Conflict(**H1c**)
+- Being a Government Proto-Coalition (**H1**)
+- Number of Coalition Parties (_control variable_)
+- Effective Number of Parties (_control variable_)
+- % Change GDP Growth (_control variable_)
+- Being on the Same Ideological Side (_control variable_)
 
  ``` r
 ##  Independent Variables
-rbind(tibble(freq = round(table(df$hs)/dim(df)[1],2),
-             values = 1:7,
-             id = "Habit Strength \n Mean: 3.98, Standard Deviation: 1.60"),
-      tibble(freq = round(table(df$surv)/dim(df)[1],2),
-             values = 1:7,
-             id = "Surveillance \n Mean: 4.62, Standard Deviation: 1.45"),
-      tibble(freq = round(table(df$esc)/dim(df)[1],2),
-             values = 1:7,
-             id = "Escapism \n Mean: 3.24, Standard Deviation: 1.63"),
-      tibble(freq = round(table(df$pt)/dim(df)[1],2),
-             values = 1:7,
-             id = "Passing Time \n Mean: 3.51, Standard Deviation: 1.63"),
-      tibble(freq = round(table(df$ent)/dim(df)[1],2),
-             values = 1:7,
-             id = "Entertainment \n Mean: 3.59, Standard Deviation: 1.73")) %>%
-  ggplot(aes(x = values, y = freq)) +
-  geom_col(fill = "gray85", colour = "black") +
+rbind(tibble(
+  freq = c(round(df$popularity,2), round(df$experience, 2), df$no_cabinetparties,
+           round(df$enps,2), round(df$gdp,2)),
+  id = c(rep("Popularity \n Mean: -2.15, Standard Deviation: 1.48 \n Range: -8.13 - 1.72", length(round(df$popularity,2))),
+         rep("Experience \n Mean: 0.16, Standard Deviation: 0.19 \n Range: 0 - 1", length(round(df$experience, 2))),
+         rep("Number of Coalition Parties \n Mean: 2.53, Standard Deviation: 1.08 \n Range: 1 - 5", length(round(df$no_cabinetparties, 2))),
+         rep("Effective Number of Parties (ENPS) \n Mean: 74.61, Standard Deviation: 7.04 \n Range: 57.75 - 88.14", length(round(df$enps, 2))),
+         rep("% Change GDP Growth \n Mean: 1.91, Standard Deviation: 2.65 \n Range: -4.98 - 6.42", length(round(df$gdp, 2)))))) %>%
+  ggplot(aes(x = freq)) +
+  geom_histogram(fill = "gray85", colour = "black") +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5)) +
-  facet_wrap(~ id, ncol = 3) +
-  scale_y_continuous(labels = scales::percent) +
-  scale_x_continuous(breaks = 1:7) +
-  labs(x = "", y="", title = "Independent Variable: Gratifications of the News")
+  facet_wrap(~ id, ncol = 3,scales = "free")  +
+  labs(x="",y="", title = "Continues Independent Variables")
 
-  rbind(tibble(freq = round(table(df$mobnews)/dim(df)[1],2),
-             values = 0:7,
-             id = "Mobile News Usage \n Mean: 3.29, Standard Deviation: 1.63"),
-      tibble(freq = round(table(df$corona)/dim(df)[1],2),
-             values = seq(from = 0, to = 0.9, by = 0.1),
-             id = "Knowledge about Corona \n Mean: 0.36, Standard Deviation: 0.15"),
-      tibble(freq = round(table(df$polsoph)/dim(df)[1],2),
-             values = 1:5,
-             id = "Political Sophistication \n Mean: 2.56, Standard Deviation: 0.78")) %>%
-  ggplot(aes(x = values, y = freq)) +
-  geom_col(fill = "gray85", colour = "black") +
+rbind(tibble(
+  value = c("No Conflict","Conflict","Not a Government Proto-Coalition",
+            "Government Proto-Coalition","Same Ideological Side",
+            "Opposite Side"),
+  freq = c(table(df$conflict2),table(df$cabinet_pair2),table(df$rile2)),
+  id = c(rep("Conflict \n Median: No Conflict", 2),
+         rep("Being a Government Proto-Coalition \n Median: Not a Government Proto-Coalition", 2),
+         rep("Being on the Same Ideological Side \n Median: Same Ideological Side", 2)))) %>%
+  ggplot(aes(x = value, y = freq)) +
+  geom_col(fill = "gray85", colour = "black" ) +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5)) +
-  facet_wrap(~ id, ncol = 3, scales = "free_x") +
-  scale_y_continuous(labels = scales::percent) +
-  labs(x = "", y="", title = "Independent Variables")
-
+  facet_wrap(~ id, ncol = 3,scales = "free")  +
+  labs(x="",y="", title = "Dichotomous Independent Variables")
 ```
-
-![Figure](../../report/figures/Distributions_IVugt_PollFish.png)
-![Figure](../../report/figures/Distributions_IV_PollFish.png)
-
-Control Variables
--------
-- Trust in Media
-- News Usage
-- Political Efficacy
-- Gender
-- Age
-
- ``` r
-# Controls
-rbind(tibble(freq = round(table(df$trust_online)/dim(df)[1],2),
-             values = 1:6,
-             id = "Trust in Online Media \n Mean: 3.55, Standard Deviation: 0.99"),
-      tibble(freq = round(table(df$tradnews)/dim(df)[1],2),
-             values = 0:7,
-             id = "Traditional News Usage \n Mean: 3.45, Standard Deviation: 1.69"),
-      tibble(freq = round(table(df$trust_trad)/dim(df)[1],2),
-             values = 1:7,
-             id = "Trust in Traditional Media \n Mean: 4.40, Standard Deviation: 1.22"),
-      tibble(freq = round(table(df$gender)/dim(df)[1],2),
-             values = levels(df$gender),
-             id = "Gender \n Median: Male"),
-      tibble(freq = round(table(df$age_group)/dim(df)[1],2),
-             values = c("20's", "30's", "40's", "50's", "60's", "70's"),
-             id = "Age \n Mean: 31.86, Standard Deviation: 12.30"),
-      tibble(freq = round(table(df$eo)/dim(df)[1],2),
-             values = -2:7,
-             id = "Epistemic Overconfidence \n Mean: 2.50, Standard Deviation: 1.91")) %>%
-  ggplot(aes(x = values, y = freq)) +
-  facet_wrap(~ id, ncol = 3, scales = "free") +
-  geom_col(fill = "gray85", colour = "black") +
-  theme_classic() +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  scale_y_continuous(labels = scales::percent) +
-  labs(x = "", y="", title = "Control Variables")
-```
-![Figure](../../report/figures/Distributions_Controls_PollFish.png)
+![Figure](../../report/figures/report/figures/Distributions_Continuous_IVs.png)
+![Figure](../../report/figures/report/figures/Distributions_Dichotomous_IVs.png)
