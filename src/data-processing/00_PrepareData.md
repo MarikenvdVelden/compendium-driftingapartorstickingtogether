@@ -17,8 +17,6 @@ Content
 - [Tidy Data](#Tidy-Data)
     -   [Dependent Variable](#Dependent-Variable)
     -   [Independent Variables](#Independent-Variables)
-    -   [Moderator](#Moderator)
-    -   [Control Variables](#Control-Variables)
 
 Setup
 =====
